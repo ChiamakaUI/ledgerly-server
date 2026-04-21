@@ -15,7 +15,7 @@ const app = express();
 
 app.use(cors({
   origin: process.env.NODE_ENV === "production"
-    ? ["https://your-frontend.vercel.app"]
+    ? ["https://ledgerl.netlify.app"]
     : ["http://localhost:3000"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "x-wallet-address", "Authorization"],
