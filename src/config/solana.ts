@@ -33,12 +33,27 @@ export function getPlatformKeypair(): Keypair {
 
 export function getIdl(): any {
   if (!_idl) {
-    _idl = JSON.parse(
-      readFileSync(
-        join(__dirname, "../../src/idl/vidbloq_program.json"),
-        "utf-8",
-      ),
-    );
+    // Try multiple paths — works in both dev (tsx) and production (node dist/)
+    const paths = [
+      join(__dirname, "../idl/vidbloq_program.json"),       // dist/idl/
+      join(__dirname, "../../src/idl/vidbloq_program.json"), // src/idl/ (dev)
+      join(process.cwd(), "src/idl/vidbloq_program.json"),  // from project root
+    ];
+
+    for (const p of paths) {
+      try {
+        _idl = JSON.parse(readFileSync(p, "utf-8"));
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    if (!_idl) {
+      throw new Error(
+        `IDL not found. Searched:\n${paths.join("\n")}`
+      );
+    }
   }
   return _idl;
 }
