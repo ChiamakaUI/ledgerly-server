@@ -1,0 +1,7 @@
+node_modules
+# Keep environment variables out of version control
+.env
+src/queries/*.queries.ts
+integration-test
+test-api.sh
+test-full-flow.ts

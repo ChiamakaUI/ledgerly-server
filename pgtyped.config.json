@@ -1,0 +1,13 @@
+{
+  "transforms": [
+    {
+      "mode": "sql",
+      "include": "**/*.sql",
+      "emitTemplate": "{{dir}}/{{name}}.queries.ts"
+    }
+  ],
+  "srcDir": "src/queries",
+  "failOnError": false,
+  "camelCaseColumnNames": true,
+  "dbUrl": "postgres://chiamakaezemba@localhost:5432/paid_calendly"
+}
