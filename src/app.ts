@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import { loadEnv, env } from "./config/env.js";
-import { hostRoutes, bookingRoutes } from "./routes/index.js";
+import { hostRoutes, bookingRoutes, webhookRoutes } from "./routes/index.js";
 import { startCronJobs } from "./services/index.js";
 
 
@@ -29,6 +29,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api/hosts", hostRoutes.default);
 app.use("/api/bookings", bookingRoutes.default);
+app.use("/api/webhooks", webhookRoutes.default);
 
 const PORT = parseInt(env().PORT);
 
