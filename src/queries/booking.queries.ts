@@ -18,6 +18,7 @@ export interface ICreateBookingParams {
   hostId?: string | null | void;
   paymentExpiresAt?: DateOrString | null | void;
   scheduledAt?: DateOrString | null | void;
+  sessionId?: string | null | void;
   streamAta?: string | null | void;
   streamName?: string | null | void;
   streamPda?: string | null | void;
@@ -45,6 +46,7 @@ export interface ICreateBookingResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -60,7 +62,7 @@ export interface ICreateBookingQuery {
   result: ICreateBookingResult;
 }
 
-const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,"callerName":true,"callerEmail":true,"scheduledAt":true,"durationMinutes":true,"timezone":true,"amount":true,"streamName":true,"streamPda":true,"streamAta":true,"donorPda":true,"paymentExpiresAt":true},"params":[{"name":"hostId","required":false,"transform":{"type":"scalar"},"locs":[{"a":230,"b":236}]},{"name":"callerWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":239,"b":251}]},{"name":"callerName","required":false,"transform":{"type":"scalar"},"locs":[{"a":254,"b":264}]},{"name":"callerEmail","required":false,"transform":{"type":"scalar"},"locs":[{"a":267,"b":278}]},{"name":"scheduledAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":285,"b":296}]},{"name":"durationMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":299,"b":314}]},{"name":"timezone","required":false,"transform":{"type":"scalar"},"locs":[{"a":317,"b":325}]},{"name":"amount","required":false,"transform":{"type":"scalar"},"locs":[{"a":328,"b":334}]},{"name":"streamName","required":false,"transform":{"type":"scalar"},"locs":[{"a":360,"b":370}]},{"name":"streamPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":373,"b":382}]},{"name":"streamAta","required":false,"transform":{"type":"scalar"},"locs":[{"a":385,"b":394}]},{"name":"donorPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":397,"b":405}]},{"name":"paymentExpiresAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":412,"b":428}]}],"statement":"INSERT INTO bookings (\n    host_id, caller_wallet, caller_name, caller_email,\n    scheduled_at, duration_minutes, timezone, amount, status,\n    stream_name, stream_pda, stream_ata, donor_pda,\n    payment_expires_at\n) VALUES (\n    :hostId, :callerWallet, :callerName, :callerEmail,\n    :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',\n    :streamName, :streamPda, :streamAta, :donorPda,\n    :paymentExpiresAt\n)\nRETURNING *"};
+const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,"callerName":true,"callerEmail":true,"scheduledAt":true,"durationMinutes":true,"timezone":true,"amount":true,"streamName":true,"streamPda":true,"streamAta":true,"donorPda":true,"paymentExpiresAt":true,"sessionId":true},"params":[{"name":"hostId","required":false,"transform":{"type":"scalar"},"locs":[{"a":242,"b":248}]},{"name":"callerWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":251,"b":263}]},{"name":"callerName","required":false,"transform":{"type":"scalar"},"locs":[{"a":266,"b":276}]},{"name":"callerEmail","required":false,"transform":{"type":"scalar"},"locs":[{"a":279,"b":290}]},{"name":"scheduledAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":297,"b":308}]},{"name":"durationMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":311,"b":326}]},{"name":"timezone","required":false,"transform":{"type":"scalar"},"locs":[{"a":329,"b":337}]},{"name":"amount","required":false,"transform":{"type":"scalar"},"locs":[{"a":340,"b":346}]},{"name":"streamName","required":false,"transform":{"type":"scalar"},"locs":[{"a":372,"b":382}]},{"name":"streamPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":385,"b":394}]},{"name":"streamAta","required":false,"transform":{"type":"scalar"},"locs":[{"a":397,"b":406}]},{"name":"donorPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":409,"b":417}]},{"name":"paymentExpiresAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":424,"b":440}]},{"name":"sessionId","required":false,"transform":{"type":"scalar"},"locs":[{"a":443,"b":452}]}],"statement":"INSERT INTO bookings (\n    host_id, caller_wallet, caller_name, caller_email,\n    scheduled_at, duration_minutes, timezone, amount, status,\n    stream_name, stream_pda, stream_ata, donor_pda,\n    payment_expires_at, session_id\n) VALUES (\n    :hostId, :callerWallet, :callerName, :callerEmail,\n    :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',\n    :streamName, :streamPda, :streamAta, :donorPda,\n    :paymentExpiresAt, :sessionId\n)\nRETURNING *"};
 
 /**
  * Query generated from SQL:
@@ -69,12 +71,12 @@ const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,
  *     host_id, caller_wallet, caller_name, caller_email,
  *     scheduled_at, duration_minutes, timezone, amount, status,
  *     stream_name, stream_pda, stream_ata, donor_pda,
- *     payment_expires_at
+ *     payment_expires_at, session_id
  * ) VALUES (
  *     :hostId, :callerWallet, :callerName, :callerEmail,
  *     :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',
  *     :streamName, :streamPda, :streamAta, :donorPda,
- *     :paymentExpiresAt
+ *     :paymentExpiresAt, :sessionId
  * )
  * RETURNING *
  * ```
@@ -110,6 +112,7 @@ export interface IGetBookingByIdResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -169,6 +172,7 @@ export interface IGetBookingWithHostResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -228,6 +232,7 @@ export interface IGetBookingsByCallerWalletResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -317,6 +322,7 @@ export interface IGetBookingsByHostIdResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -379,6 +385,7 @@ export interface IGetBookingsByHostIdAndStatusResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -557,6 +564,7 @@ export interface IUpdateBookingStatusResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -614,6 +622,7 @@ export interface IConfirmBookingPaymentResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -673,6 +682,7 @@ export interface ICompleteBookingResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -733,6 +743,7 @@ export interface IRefundBookingResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -792,6 +803,7 @@ export interface IMarkNoShowResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -876,6 +888,7 @@ export interface IGetNoShowBookingsResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -929,6 +942,7 @@ export interface IGetIncompleteActiveBookingsResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -984,6 +998,7 @@ export interface IRecordCallerJoinedResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -1039,6 +1054,7 @@ export interface IRecordHostJoinedResult {
   refundReason: string | null;
   refundSignature: string | null;
   scheduledAt: Date;
+  sessionId: string | null;
   status: booking_status;
   streamAta: string | null;
   streamName: string;
@@ -1069,5 +1085,129 @@ const recordHostJoinedIR: any = {"usedParamSet":{"id":true},"params":[{"name":"i
  * ```
  */
 export const recordHostJoined = new PreparedQuery<IRecordHostJoinedParams,IRecordHostJoinedResult>(recordHostJoinedIR);
+
+
+/** 'GetPaidBookingsByRoom' parameters type */
+export interface IGetPaidBookingsByRoomParams {
+  vidbloqRoom?: string | null | void;
+}
+
+/** 'GetPaidBookingsByRoom' return type */
+export interface IGetPaidBookingsByRoomResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  feePercentage: number;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  hostName: string;
+  hostSlug: string;
+  hostWallet: string;
+  id: string;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'GetPaidBookingsByRoom' query type */
+export interface IGetPaidBookingsByRoomQuery {
+  params: IGetPaidBookingsByRoomParams;
+  result: IGetPaidBookingsByRoomResult;
+}
+
+const getPaidBookingsByRoomIR: any = {"usedParamSet":{"vidbloqRoom":true},"params":[{"name":"vidbloqRoom","required":false,"transform":{"type":"scalar"},"locs":[{"a":176,"b":187}]}],"statement":"SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug\nFROM bookings b\nJOIN hosts h ON b.host_id = h.id\nWHERE b.vidbloq_room = :vidbloqRoom\nAND b.status IN ('paid', 'active')\nORDER BY b.created_at ASC"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug
+ * FROM bookings b
+ * JOIN hosts h ON b.host_id = h.id
+ * WHERE b.vidbloq_room = :vidbloqRoom
+ * AND b.status IN ('paid', 'active')
+ * ORDER BY b.created_at ASC
+ * ```
+ */
+export const getPaidBookingsByRoom = new PreparedQuery<IGetPaidBookingsByRoomParams,IGetPaidBookingsByRoomResult>(getPaidBookingsByRoomIR);
+
+
+/** 'GetPaidBookingsBySessionId' parameters type */
+export interface IGetPaidBookingsBySessionIdParams {
+  sessionId?: string | null | void;
+}
+
+/** 'GetPaidBookingsBySessionId' return type */
+export interface IGetPaidBookingsBySessionIdResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  feePercentage: number;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  hostName: string;
+  hostSlug: string;
+  hostWallet: string;
+  id: string;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'GetPaidBookingsBySessionId' query type */
+export interface IGetPaidBookingsBySessionIdQuery {
+  params: IGetPaidBookingsBySessionIdParams;
+  result: IGetPaidBookingsBySessionIdResult;
+}
+
+const getPaidBookingsBySessionIdIR: any = {"usedParamSet":{"sessionId":true},"params":[{"name":"sessionId","required":false,"transform":{"type":"scalar"},"locs":[{"a":174,"b":183}]}],"statement":"SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug\nFROM bookings b\nJOIN hosts h ON b.host_id = h.id\nWHERE b.session_id = :sessionId\nAND b.status IN ('paid', 'active')\nORDER BY b.created_at ASC"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug
+ * FROM bookings b
+ * JOIN hosts h ON b.host_id = h.id
+ * WHERE b.session_id = :sessionId
+ * AND b.status IN ('paid', 'active')
+ * ORDER BY b.created_at ASC
+ * ```
+ */
+export const getPaidBookingsBySessionId = new PreparedQuery<IGetPaidBookingsBySessionIdParams,IGetPaidBookingsBySessionIdResult>(getPaidBookingsBySessionIdIR);
 
 

@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
-import { getPool, camelizeKeys } from "../config/index.js";
-import { env } from "../config/env.js";
+import { getPool, camelizeKeys, env } from "../config/index.js";
 import {
   createBooking,
   getBookingById,
@@ -20,8 +19,8 @@ import {
   getNoShowBookings,
   recordCallerJoined,
   recordHostJoined,
+  type booking_status
 } from "../queries/booking.queries.js";
-import type { booking_status } from "../queries/booking.queries.js";
 import { getHostBySlug } from "../queries/hosts.queries.js";
 import {
   initializeEscrow,
@@ -112,6 +111,7 @@ export async function createBookingRecord(
       streamAta: escrowResult.streamATA,
       donorPda: depositResult.donorPDA,
       paymentExpiresAt: paymentExpiresAt.toISOString(),
+      sessionId: data.sessionId || null,
     },
     pool
   );
@@ -174,21 +174,63 @@ export async function confirmPayment(bookingId: string, signature: string) {
     ? camelizeKeys(hostRows[0])
     : null;
 
-  // Create Vidbloq room for the call
+  // Create Vidbloq room — for session bookings, create once on the session
   let vidbloqRoom: string | null = null;
-  try {
-    const room = await createVidbloqRoom({
-      hostWallet: bookingWithHost.hostWallet,
-      title: `Call: ${booking.streamName}`,
-      callType: "Video",
-      scheduledFor: booking.scheduledAt,
-    });
-    vidbloqRoom = room.name;
-    console.log(`[VIDBLOQ] Room created: ${vidbloqRoom}`);
-  } catch (err) {
-    // Room creation failure shouldn't block payment confirmation
-    // The room can be created lazily on join
-    console.error("[VIDBLOQ] Failed to create room:", err);
+
+  if (booking.sessionId) {
+    // Group session — check if session already has a room
+    const { getSessionById, updateSessionRoom } = await import(
+      "../queries/session.queries.js"
+    );
+    const sessionRows = await getSessionById.run(
+      { id: booking.sessionId },
+      pool
+    );
+    const session: any = sessionRows[0]
+      ? camelizeKeys(sessionRows[0])
+      : null;
+
+    if (session?.vidbloqRoom) {
+      // Room already exists — reuse it
+      vidbloqRoom = session.vidbloqRoom;
+    } else {
+      // First paid booking in this session — create the room
+      try {
+        const room = await createVidbloqRoom({
+          hostWallet: bookingWithHost.hostWallet,
+          title: session?.title || `Session: ${booking.streamName}`,
+          callType: "Video",
+          scheduledFor: booking.scheduledAt,
+        });
+        vidbloqRoom = room.name;
+
+        // Store room on the session
+        await updateSessionRoom.run(
+          { id: booking.sessionId, vidbloqRoom },
+          pool
+        );
+
+        console.log(
+          `[VIDBLOQ] Room created for session ${booking.sessionId}: ${vidbloqRoom}`
+        );
+      } catch (err) {
+        console.error("[VIDBLOQ] Failed to create session room:", err);
+      }
+    }
+  } else {
+    // 1:1 booking — create room per booking (existing behavior)
+    try {
+      const room = await createVidbloqRoom({
+        hostWallet: bookingWithHost.hostWallet,
+        title: `Call: ${booking.streamName}`,
+        callType: "Video",
+        scheduledFor: booking.scheduledAt,
+      });
+      vidbloqRoom = room.name;
+      console.log(`[VIDBLOQ] Room created: ${vidbloqRoom}`);
+    } catch (err) {
+      console.error("[VIDBLOQ] Failed to create room:", err);
+    }
   }
 
   await confirmBookingPayment.run(

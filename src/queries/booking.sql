@@ -3,12 +3,12 @@ INSERT INTO bookings (
     host_id, caller_wallet, caller_name, caller_email,
     scheduled_at, duration_minutes, timezone, amount, status,
     stream_name, stream_pda, stream_ata, donor_pda,
-    payment_expires_at
+    payment_expires_at, session_id
 ) VALUES (
     :hostId, :callerWallet, :callerName, :callerEmail,
     :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',
     :streamName, :streamPda, :streamAta, :donorPda,
-    :paymentExpiresAt
+    :paymentExpiresAt, :sessionId
 )
 RETURNING *;
 
@@ -146,3 +146,19 @@ SET host_joined_at = now(),
     updated_at = now()
 WHERE id = :id AND host_joined_at IS NULL
 RETURNING *;
+
+/* @name GetPaidBookingsByRoom */
+SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug
+FROM bookings b
+JOIN hosts h ON b.host_id = h.id
+WHERE b.vidbloq_room = :vidbloqRoom
+AND b.status IN ('paid', 'active')
+ORDER BY b.created_at ASC;
+
+/* @name GetPaidBookingsBySessionId */
+SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage, h.name as host_name, h.slug as host_slug
+FROM bookings b
+JOIN hosts h ON b.host_id = h.id
+WHERE b.session_id = :sessionId
+AND b.status IN ('paid', 'active')
+ORDER BY b.created_at ASC;

@@ -46,6 +46,25 @@ export interface CreateBookingRequest {
   callerWallet: string;
   callerName: string;
   callerEmail: string;
+  sessionId?: string; // if booking into an existing group session
+}
+
+export interface CreateSessionRequest {
+  hostSlug: string;
+  title: string;
+  description?: string;
+  scheduledAt: string;
+  durationMinutes?: number;
+  rate?: number;        // override host default rate
+  maxParticipants: number;
+  sessionType: "one_on_one" | "group";
+}
+
+export interface BookSessionRequest {
+  sessionId: string;
+  callerWallet: string;
+  callerName: string;
+  callerEmail: string;
 }
 
 export interface ConfirmPaymentRequest {
