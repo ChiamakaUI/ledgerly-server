@@ -27,6 +27,9 @@ const envSchema = z.object({
   VIDBLOQ_API_KEY: z.string().min(1),
   VIDBLOQ_API_SECRET: z.string().min(1),
   VIDBLOQ_WEBHOOK_SECRET: z.string().min(1),
+
+  RESEND_API_KEY: z.string().min(1),
+  FRONTEND_URL: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;

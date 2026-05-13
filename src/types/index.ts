@@ -46,7 +46,12 @@ export interface CreateBookingRequest {
   callerWallet: string;
   callerName: string;
   callerEmail: string;
-  sessionId?: string; // if booking into an existing group session
+  sessionId?: string;
+  // Gifting — if set, the participant attends instead of the caller
+  participantWallet?: string;
+  participantName?: string;
+  participantEmail?: string;
+  isGift?: boolean;
 }
 
 export interface CreateSessionRequest {
@@ -65,6 +70,11 @@ export interface BookSessionRequest {
   callerWallet: string;
   callerName: string;
   callerEmail: string;
+  // Gifting
+  participantWallet?: string;
+  participantName?: string;
+  participantEmail?: string;
+  isGift?: boolean;
 }
 
 export interface ConfirmPaymentRequest {

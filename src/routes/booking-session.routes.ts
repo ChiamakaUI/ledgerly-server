@@ -51,7 +51,15 @@ router.get("/:id", async (req: Request, res: Response) => {
 // POST /api/sessions/:id/book — book a spot in a session
 router.post("/:id/book", async (req: Request, res: Response) => {
   try {
-    const { callerWallet, callerName, callerEmail } = req.body;
+    const {
+      callerWallet,
+      callerName,
+      callerEmail,
+      participantWallet,
+      participantName,
+      participantEmail,
+      isGift,
+    } = req.body;
 
     if (!callerWallet) {
       return res.status(400).json({ error: "callerWallet is required" });
@@ -63,11 +71,22 @@ router.post("/:id/book", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "callerEmail is required" });
     }
 
+    // If gifting, participant wallet is required
+    if (isGift && !participantEmail) {
+      return res
+        .status(400)
+        .json({ error: "participantEmail is required for gift bookings" });
+    }
+
     const result = await bookSession({
       sessionId: req.params.id,
       callerWallet,
       callerName,
       callerEmail,
+      participantWallet,
+      participantName,
+      participantEmail,
+      isGift,
     });
 
     return res.status(201).json(result);
@@ -79,11 +98,10 @@ router.post("/:id/book", async (req: Request, res: Response) => {
         ? 409
         : err.message.includes("already started")
           ? 410
-          : err.message.includes("duplicate key") // ← add this
+          : err.message.includes("duplicate key")
             ? 409
             : 400;
 
-    // And override the message for duplicate key errors
     const message = err.message.includes("duplicate key")
       ? "You have already booked this session"
       : err.message;
@@ -113,7 +131,7 @@ router.post(
           : 400;
       return res.status(status).json({ error: err.message });
     }
-  },
+  }
 );
 
 // GET /api/sessions/:id/join — join a session call
@@ -142,16 +160,16 @@ router.get("/:id/join", async (req: Request, res: Response) => {
     // For hosts joining group sessions, we need a separate flow.
 
     // Try to find this wallet's booking in the session
+    // Check both caller_wallet and participant_wallet (for gift bookings)
     const pool = (await import("../config/index.js")).getPool();
-    const { camelizeKeys } = await import("../config/index.js");
 
     const result = await pool.query(
       `SELECT id FROM bookings
        WHERE session_id = $1
-       AND (caller_wallet = $2)
+       AND (caller_wallet = $2 OR participant_wallet = $2)
        AND status IN ('paid', 'active')
        LIMIT 1`,
-      [req.params.id, wallet],
+      [req.params.id, wallet]
     );
 
     if (result.rows.length > 0) {
@@ -165,7 +183,7 @@ router.get("/:id/join", async (req: Request, res: Response) => {
       `SELECT h.wallet_address FROM sessions s
        JOIN hosts h ON s.host_id = h.id
        WHERE s.id = $1`,
-      [req.params.id],
+      [req.params.id]
     );
 
     if (
@@ -178,7 +196,7 @@ router.get("/:id/join", async (req: Request, res: Response) => {
          WHERE session_id = $1
          AND status IN ('paid', 'active')
          LIMIT 1`,
-        [req.params.id],
+        [req.params.id]
       );
 
       if (bookingResult.rows.length === 0) {
@@ -187,7 +205,11 @@ router.get("/:id/join", async (req: Request, res: Response) => {
           .json({ error: "No paid bookings in this session yet" });
       }
 
-      const joinResult = await joinCall(bookingResult.rows[0].id, wallet, name);
+      const joinResult = await joinCall(
+        bookingResult.rows[0].id,
+        wallet,
+        name
+      );
       return res.json(joinResult);
     }
 

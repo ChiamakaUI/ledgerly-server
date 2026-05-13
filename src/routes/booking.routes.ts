@@ -8,6 +8,8 @@ import {
   listCallerBookings,
   listHostBookings,
   joinCall,
+  getGiftByClaimCode,
+  claimGift,
 } from "../services/booking.service.js";
 import { getHostByWalletRecord } from "../services/host.service.js";
 import { booking_status } from "../queries/booking.queries.js";
@@ -74,18 +76,66 @@ router.get("/host/me", async (req: Request, res: Response) => {
 });
 
 // ============================================
+// Gift claim routes (public — no auth)
+// ============================================
+
+// GET /api/bookings/gift/claim/:code — look up a gift by claim code
+router.get("/gift/claim/:code", async (req: Request, res: Response) => {
+  try {
+    const gift = await getGiftByClaimCode(req.params.code);
+    if (!gift) {
+      return res.status(404).json({ error: "Gift not found" });
+    }
+    return res.json({ gift });
+  } catch (err: any) {
+    console.error("Error fetching gift:", err);
+    return res.status(500).json({ error: "Failed to fetch gift" });
+  }
+});
+
+// POST /api/bookings/gift/claim/:code — claim a gift with your wallet
+router.post("/gift/claim/:code", async (req: Request, res: Response) => {
+  try {
+    const { wallet } = req.body;
+    if (!wallet) {
+      return res.status(400).json({ error: "wallet is required" });
+    }
+
+    const booking = await claimGift(req.params.code, wallet);
+    return res.json({ booking, message: "Gift claimed successfully!" });
+  } catch (err: any) {
+    console.error("Error claiming gift:", err);
+    const status = err.message.includes("not found")
+      ? 404
+      : err.message.includes("already been claimed")
+        ? 409
+        : err.message.includes("cancelled")
+          ? 410
+          : err.message.includes("already ended")
+            ? 410
+            : 400;
+    return res.status(status).json({ error: err.message });
+  }
+});
+
+// ============================================
 // Create booking
 // ============================================
 
 // POST /api/bookings — create booking + get deposit instruction
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { callerName, callerEmail } = req.body;
+    const { callerName, callerEmail, isGift, participantEmail } = req.body;
     if (!callerName?.trim()) {
       return res.status(400).json({ error: "callerName is required" });
     }
     if (!callerEmail?.trim()) {
       return res.status(400).json({ error: "callerEmail is required" });
+    }
+    if (isGift && !participantEmail) {
+      return res
+        .status(400)
+        .json({ error: "participantEmail is required for gift bookings" });
     }
 
     const result = await createBookingRecord(req.body);

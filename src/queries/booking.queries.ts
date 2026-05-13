@@ -16,6 +16,10 @@ export interface ICreateBookingParams {
   donorPda?: string | null | void;
   durationMinutes?: number | null | void;
   hostId?: string | null | void;
+  isGift?: boolean | null | void;
+  participantEmail?: string | null | void;
+  participantName?: string | null | void;
+  participantWallet?: string | null | void;
   paymentExpiresAt?: DateOrString | null | void;
   scheduledAt?: DateOrString | null | void;
   sessionId?: string | null | void;
@@ -39,9 +43,15 @@ export interface ICreateBookingResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -62,7 +72,7 @@ export interface ICreateBookingQuery {
   result: ICreateBookingResult;
 }
 
-const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,"callerName":true,"callerEmail":true,"scheduledAt":true,"durationMinutes":true,"timezone":true,"amount":true,"streamName":true,"streamPda":true,"streamAta":true,"donorPda":true,"paymentExpiresAt":true,"sessionId":true},"params":[{"name":"hostId","required":false,"transform":{"type":"scalar"},"locs":[{"a":242,"b":248}]},{"name":"callerWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":251,"b":263}]},{"name":"callerName","required":false,"transform":{"type":"scalar"},"locs":[{"a":266,"b":276}]},{"name":"callerEmail","required":false,"transform":{"type":"scalar"},"locs":[{"a":279,"b":290}]},{"name":"scheduledAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":297,"b":308}]},{"name":"durationMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":311,"b":326}]},{"name":"timezone","required":false,"transform":{"type":"scalar"},"locs":[{"a":329,"b":337}]},{"name":"amount","required":false,"transform":{"type":"scalar"},"locs":[{"a":340,"b":346}]},{"name":"streamName","required":false,"transform":{"type":"scalar"},"locs":[{"a":372,"b":382}]},{"name":"streamPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":385,"b":394}]},{"name":"streamAta","required":false,"transform":{"type":"scalar"},"locs":[{"a":397,"b":406}]},{"name":"donorPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":409,"b":417}]},{"name":"paymentExpiresAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":424,"b":440}]},{"name":"sessionId","required":false,"transform":{"type":"scalar"},"locs":[{"a":443,"b":452}]}],"statement":"INSERT INTO bookings (\n    host_id, caller_wallet, caller_name, caller_email,\n    scheduled_at, duration_minutes, timezone, amount, status,\n    stream_name, stream_pda, stream_ata, donor_pda,\n    payment_expires_at, session_id\n) VALUES (\n    :hostId, :callerWallet, :callerName, :callerEmail,\n    :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',\n    :streamName, :streamPda, :streamAta, :donorPda,\n    :paymentExpiresAt, :sessionId\n)\nRETURNING *"};
+const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,"callerName":true,"callerEmail":true,"scheduledAt":true,"durationMinutes":true,"timezone":true,"amount":true,"streamName":true,"streamPda":true,"streamAta":true,"donorPda":true,"paymentExpiresAt":true,"sessionId":true,"participantWallet":true,"participantName":true,"participantEmail":true,"isGift":true},"params":[{"name":"hostId","required":false,"transform":{"type":"scalar"},"locs":[{"a":312,"b":318}]},{"name":"callerWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":321,"b":333}]},{"name":"callerName","required":false,"transform":{"type":"scalar"},"locs":[{"a":336,"b":346}]},{"name":"callerEmail","required":false,"transform":{"type":"scalar"},"locs":[{"a":349,"b":360}]},{"name":"scheduledAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":367,"b":378}]},{"name":"durationMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":381,"b":396}]},{"name":"timezone","required":false,"transform":{"type":"scalar"},"locs":[{"a":399,"b":407}]},{"name":"amount","required":false,"transform":{"type":"scalar"},"locs":[{"a":410,"b":416}]},{"name":"streamName","required":false,"transform":{"type":"scalar"},"locs":[{"a":442,"b":452}]},{"name":"streamPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":455,"b":464}]},{"name":"streamAta","required":false,"transform":{"type":"scalar"},"locs":[{"a":467,"b":476}]},{"name":"donorPda","required":false,"transform":{"type":"scalar"},"locs":[{"a":479,"b":487}]},{"name":"paymentExpiresAt","required":false,"transform":{"type":"scalar"},"locs":[{"a":494,"b":510}]},{"name":"sessionId","required":false,"transform":{"type":"scalar"},"locs":[{"a":513,"b":522}]},{"name":"participantWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":529,"b":546}]},{"name":"participantName","required":false,"transform":{"type":"scalar"},"locs":[{"a":549,"b":564}]},{"name":"participantEmail","required":false,"transform":{"type":"scalar"},"locs":[{"a":567,"b":583}]},{"name":"isGift","required":false,"transform":{"type":"scalar"},"locs":[{"a":586,"b":592}]}],"statement":"INSERT INTO bookings (\n    host_id, caller_wallet, caller_name, caller_email,\n    scheduled_at, duration_minutes, timezone, amount, status,\n    stream_name, stream_pda, stream_ata, donor_pda,\n    payment_expires_at, session_id,\n    participant_wallet, participant_name, participant_email, is_gift\n) VALUES (\n    :hostId, :callerWallet, :callerName, :callerEmail,\n    :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',\n    :streamName, :streamPda, :streamAta, :donorPda,\n    :paymentExpiresAt, :sessionId,\n    :participantWallet, :participantName, :participantEmail, :isGift\n)\nRETURNING *"};
 
 /**
  * Query generated from SQL:
@@ -71,12 +81,14 @@ const createBookingIR: any = {"usedParamSet":{"hostId":true,"callerWallet":true,
  *     host_id, caller_wallet, caller_name, caller_email,
  *     scheduled_at, duration_minutes, timezone, amount, status,
  *     stream_name, stream_pda, stream_ata, donor_pda,
- *     payment_expires_at, session_id
+ *     payment_expires_at, session_id,
+ *     participant_wallet, participant_name, participant_email, is_gift
  * ) VALUES (
  *     :hostId, :callerWallet, :callerName, :callerEmail,
  *     :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',
  *     :streamName, :streamPda, :streamAta, :donorPda,
- *     :paymentExpiresAt, :sessionId
+ *     :paymentExpiresAt, :sessionId,
+ *     :participantWallet, :participantName, :participantEmail, :isGift
  * )
  * RETURNING *
  * ```
@@ -103,11 +115,17 @@ export interface IGetBookingByIdResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -162,12 +180,18 @@ export interface IGetBookingWithHostResult {
   donorPda: string | null;
   durationMinutes: number;
   feePercentage: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   hostWallet: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -223,11 +247,17 @@ export interface IGetBookingsByCallerWalletResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -313,11 +343,17 @@ export interface IGetBookingsByHostIdResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -376,11 +412,17 @@ export interface IGetBookingsByHostIdAndStatusResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -557,9 +599,15 @@ export interface IUpdateBookingStatusResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -615,9 +663,15 @@ export interface IConfirmBookingPaymentResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -675,9 +729,15 @@ export interface ICompleteBookingResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -736,9 +796,15 @@ export interface IRefundBookingResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -796,9 +862,15 @@ export interface IMarkNoShowResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -881,9 +953,17 @@ export interface IGetNoShowBookingsResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  feePercentage: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
+  hostWallet: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -904,15 +984,18 @@ export interface IGetNoShowBookingsQuery {
   result: IGetNoShowBookingsResult;
 }
 
-const getNoShowBookingsIR: any = {"usedParamSet":{"graceMinutes":true},"params":[{"name":"graceMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":85,"b":97}]}],"statement":"SELECT * FROM bookings\nWHERE status = 'paid'\nAND scheduled_at + ((duration_minutes + :graceMinutes) * interval '1 minute') < now()\nAND call_started_at IS NULL"};
+const getNoShowBookingsIR: any = {"usedParamSet":{"graceMinutes":true},"params":[{"name":"graceMinutes","required":false,"transform":{"type":"scalar"},"locs":[{"a":192,"b":204}]}],"statement":"SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage\nFROM bookings b\nJOIN hosts h ON b.host_id = h.id\nWHERE b.status IN ('paid', 'active')\nAND b.scheduled_at + ((b.duration_minutes + :graceMinutes) * interval '1 minute') < now()\nAND b.distribute_signature IS NULL\nAND b.refund_signature IS NULL"};
 
 /**
  * Query generated from SQL:
  * ```
- * SELECT * FROM bookings
- * WHERE status = 'paid'
- * AND scheduled_at + ((duration_minutes + :graceMinutes) * interval '1 minute') < now()
- * AND call_started_at IS NULL
+ * SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage
+ * FROM bookings b
+ * JOIN hosts h ON b.host_id = h.id
+ * WHERE b.status IN ('paid', 'active')
+ * AND b.scheduled_at + ((b.duration_minutes + :graceMinutes) * interval '1 minute') < now()
+ * AND b.distribute_signature IS NULL
+ * AND b.refund_signature IS NULL
  * ```
  */
 export const getNoShowBookings = new PreparedQuery<IGetNoShowBookingsParams,IGetNoShowBookingsResult>(getNoShowBookingsIR);
@@ -935,9 +1018,15 @@ export interface IGetIncompleteActiveBookingsResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -991,9 +1080,15 @@ export interface IRecordCallerJoinedResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -1047,9 +1142,15 @@ export interface IRecordHostJoinedResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -1107,12 +1208,18 @@ export interface IGetPaidBookingsByRoomResult {
   donorPda: string | null;
   durationMinutes: number;
   feePercentage: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   hostWallet: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -1169,12 +1276,18 @@ export interface IGetPaidBookingsBySessionIdResult {
   donorPda: string | null;
   durationMinutes: number;
   feePercentage: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   hostWallet: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;
@@ -1209,5 +1322,295 @@ const getPaidBookingsBySessionIdIR: any = {"usedParamSet":{"sessionId":true},"pa
  * ```
  */
 export const getPaidBookingsBySessionId = new PreparedQuery<IGetPaidBookingsBySessionIdParams,IGetPaidBookingsBySessionIdResult>(getPaidBookingsBySessionIdIR);
+
+
+/** 'GetBookingsByParticipantWallet' parameters type */
+export interface IGetBookingsByParticipantWalletParams {
+  limit?: NumberOrString | null | void;
+  offset?: NumberOrString | null | void;
+  participantWallet?: string | null | void;
+}
+
+/** 'GetBookingsByParticipantWallet' return type */
+export interface IGetBookingsByParticipantWalletResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  hostName: string;
+  hostSlug: string;
+  id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'GetBookingsByParticipantWallet' query type */
+export interface IGetBookingsByParticipantWalletQuery {
+  params: IGetBookingsByParticipantWalletParams;
+  result: IGetBookingsByParticipantWalletResult;
+}
+
+const getBookingsByParticipantWalletIR: any = {"usedParamSet":{"participantWallet":true,"limit":true,"offset":true},"params":[{"name":"participantWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":131,"b":148}]},{"name":"limit","required":false,"transform":{"type":"scalar"},"locs":[{"a":185,"b":190}]},{"name":"offset","required":false,"transform":{"type":"scalar"},"locs":[{"a":199,"b":205}]}],"statement":"SELECT b.*, h.name as host_name, h.slug as host_slug\nFROM bookings b\nJOIN hosts h ON b.host_id = h.id\nWHERE b.participant_wallet = :participantWallet\nORDER BY b.scheduled_at DESC\nLIMIT :limit OFFSET :offset"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * SELECT b.*, h.name as host_name, h.slug as host_slug
+ * FROM bookings b
+ * JOIN hosts h ON b.host_id = h.id
+ * WHERE b.participant_wallet = :participantWallet
+ * ORDER BY b.scheduled_at DESC
+ * LIMIT :limit OFFSET :offset
+ * ```
+ */
+export const getBookingsByParticipantWallet = new PreparedQuery<IGetBookingsByParticipantWalletParams,IGetBookingsByParticipantWalletResult>(getBookingsByParticipantWalletIR);
+
+
+/** 'CountBookingsByParticipantWallet' parameters type */
+export interface ICountBookingsByParticipantWalletParams {
+  participantWallet?: string | null | void;
+}
+
+/** 'CountBookingsByParticipantWallet' return type */
+export interface ICountBookingsByParticipantWalletResult {
+  count: number | null;
+}
+
+/** 'CountBookingsByParticipantWallet' query type */
+export interface ICountBookingsByParticipantWalletQuery {
+  params: ICountBookingsByParticipantWalletParams;
+  result: ICountBookingsByParticipantWalletResult;
+}
+
+const countBookingsByParticipantWalletIR: any = {"usedParamSet":{"participantWallet":true},"params":[{"name":"participantWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":71,"b":88}]}],"statement":"SELECT COUNT(*)::int as count FROM bookings\nWHERE participant_wallet = :participantWallet"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * SELECT COUNT(*)::int as count FROM bookings
+ * WHERE participant_wallet = :participantWallet
+ * ```
+ */
+export const countBookingsByParticipantWallet = new PreparedQuery<ICountBookingsByParticipantWalletParams,ICountBookingsByParticipantWalletResult>(countBookingsByParticipantWalletIR);
+
+
+/** 'GetBookingByClaimCode' parameters type */
+export interface IGetBookingByClaimCodeParams {
+  claimCode?: string | null | void;
+}
+
+/** 'GetBookingByClaimCode' return type */
+export interface IGetBookingByClaimCodeResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  hostName: string;
+  hostSlug: string;
+  id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'GetBookingByClaimCode' query type */
+export interface IGetBookingByClaimCodeQuery {
+  params: IGetBookingByClaimCodeParams;
+  result: IGetBookingByClaimCodeResult;
+}
+
+const getBookingByClaimCodeIR: any = {"usedParamSet":{"claimCode":true},"params":[{"name":"claimCode","required":false,"transform":{"type":"scalar"},"locs":[{"a":128,"b":137}]}],"statement":"SELECT b.*, h.name as host_name, h.slug as host_slug\nFROM bookings b\nJOIN hosts h ON b.host_id = h.id\nWHERE b.gift_claim_code = :claimCode"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * SELECT b.*, h.name as host_name, h.slug as host_slug
+ * FROM bookings b
+ * JOIN hosts h ON b.host_id = h.id
+ * WHERE b.gift_claim_code = :claimCode
+ * ```
+ */
+export const getBookingByClaimCode = new PreparedQuery<IGetBookingByClaimCodeParams,IGetBookingByClaimCodeResult>(getBookingByClaimCodeIR);
+
+
+/** 'ClaimGiftBooking' parameters type */
+export interface IClaimGiftBookingParams {
+  claimCode?: string | null | void;
+  participantWallet?: string | null | void;
+}
+
+/** 'ClaimGiftBooking' return type */
+export interface IClaimGiftBookingResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'ClaimGiftBooking' query type */
+export interface IClaimGiftBookingQuery {
+  params: IClaimGiftBookingParams;
+  result: IClaimGiftBookingResult;
+}
+
+const claimGiftBookingIR: any = {"usedParamSet":{"participantWallet":true,"claimCode":true},"params":[{"name":"participantWallet","required":false,"transform":{"type":"scalar"},"locs":[{"a":41,"b":58}]},{"name":"claimCode","required":false,"transform":{"type":"scalar"},"locs":[{"a":137,"b":146}]}],"statement":"UPDATE bookings\nSET participant_wallet = :participantWallet,\n    gift_claimed_at = now(),\n    updated_at = now()\nWHERE gift_claim_code = :claimCode\nAND gift_claimed_at IS NULL\nRETURNING *"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * UPDATE bookings
+ * SET participant_wallet = :participantWallet,
+ *     gift_claimed_at = now(),
+ *     updated_at = now()
+ * WHERE gift_claim_code = :claimCode
+ * AND gift_claimed_at IS NULL
+ * RETURNING *
+ * ```
+ */
+export const claimGiftBooking = new PreparedQuery<IClaimGiftBookingParams,IClaimGiftBookingResult>(claimGiftBookingIR);
+
+
+/** 'SetGiftClaimCode' parameters type */
+export interface ISetGiftClaimCodeParams {
+  claimCode?: string | null | void;
+  id?: string | null | void;
+}
+
+/** 'SetGiftClaimCode' return type */
+export interface ISetGiftClaimCodeResult {
+  amount: string;
+  callEndedAt: Date | null;
+  callerEmail: string | null;
+  callerJoinedAt: Date | null;
+  callerName: string | null;
+  callerWallet: string;
+  callStartedAt: Date | null;
+  createdAt: Date;
+  depositSignature: string | null;
+  distributeSignature: string | null;
+  donorPda: string | null;
+  durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
+  hostId: string;
+  hostJoinedAt: Date | null;
+  id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
+  paymentExpiresAt: Date | null;
+  refundReason: string | null;
+  refundSignature: string | null;
+  scheduledAt: Date;
+  sessionId: string | null;
+  status: booking_status;
+  streamAta: string | null;
+  streamName: string;
+  streamPda: string | null;
+  timezone: string;
+  updatedAt: Date;
+  vidbloqRoom: string | null;
+}
+
+/** 'SetGiftClaimCode' query type */
+export interface ISetGiftClaimCodeQuery {
+  params: ISetGiftClaimCodeParams;
+  result: ISetGiftClaimCodeResult;
+}
+
+const setGiftClaimCodeIR: any = {"usedParamSet":{"claimCode":true,"id":true},"params":[{"name":"claimCode","required":false,"transform":{"type":"scalar"},"locs":[{"a":38,"b":47}]},{"name":"id","required":false,"transform":{"type":"scalar"},"locs":[{"a":84,"b":86}]}],"statement":"UPDATE bookings\nSET gift_claim_code = :claimCode,\n    updated_at = now()\nWHERE id = :id\nRETURNING *"};
+
+/**
+ * Query generated from SQL:
+ * ```
+ * UPDATE bookings
+ * SET gift_claim_code = :claimCode,
+ *     updated_at = now()
+ * WHERE id = :id
+ * RETURNING *
+ * ```
+ */
+export const setGiftClaimCode = new PreparedQuery<ISetGiftClaimCodeParams,ISetGiftClaimCodeResult>(setGiftClaimCodeIR);
 
 

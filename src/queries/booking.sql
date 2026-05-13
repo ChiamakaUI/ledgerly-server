@@ -3,12 +3,14 @@ INSERT INTO bookings (
     host_id, caller_wallet, caller_name, caller_email,
     scheduled_at, duration_minutes, timezone, amount, status,
     stream_name, stream_pda, stream_ata, donor_pda,
-    payment_expires_at, session_id
+    payment_expires_at, session_id,
+    participant_wallet, participant_name, participant_email, is_gift
 ) VALUES (
     :hostId, :callerWallet, :callerName, :callerEmail,
     :scheduledAt, :durationMinutes, :timezone, :amount, 'pending_payment',
     :streamName, :streamPda, :streamAta, :donorPda,
-    :paymentExpiresAt, :sessionId
+    :paymentExpiresAt, :sessionId,
+    :participantWallet, :participantName, :participantEmail, :isGift
 )
 RETURNING *;
 
@@ -121,10 +123,13 @@ WHERE status = 'pending_payment'
 AND payment_expires_at < now();
 
 /* @name GetNoShowBookings */
-SELECT * FROM bookings
-WHERE status = 'paid'
-AND scheduled_at + ((duration_minutes + :graceMinutes) * interval '1 minute') < now()
-AND call_started_at IS NULL;
+SELECT b.*, h.wallet_address as host_wallet, h.fee_percentage
+FROM bookings b
+JOIN hosts h ON b.host_id = h.id
+WHERE b.status IN ('paid', 'active')
+AND b.scheduled_at + ((b.duration_minutes + :graceMinutes) * interval '1 minute') < now()
+AND b.distribute_signature IS NULL
+AND b.refund_signature IS NULL;
 
 /* @name GetIncompleteActiveBookings */
 SELECT * FROM bookings
@@ -162,3 +167,37 @@ JOIN hosts h ON b.host_id = h.id
 WHERE b.session_id = :sessionId
 AND b.status IN ('paid', 'active')
 ORDER BY b.created_at ASC;
+
+/* @name GetBookingsByParticipantWallet */
+SELECT b.*, h.name as host_name, h.slug as host_slug
+FROM bookings b
+JOIN hosts h ON b.host_id = h.id
+WHERE b.participant_wallet = :participantWallet
+ORDER BY b.scheduled_at DESC
+LIMIT :limit OFFSET :offset;
+
+/* @name CountBookingsByParticipantWallet */
+SELECT COUNT(*)::int as count FROM bookings
+WHERE participant_wallet = :participantWallet;
+
+/* @name GetBookingByClaimCode */
+SELECT b.*, h.name as host_name, h.slug as host_slug
+FROM bookings b
+JOIN hosts h ON b.host_id = h.id
+WHERE b.gift_claim_code = :claimCode;
+
+/* @name ClaimGiftBooking */
+UPDATE bookings
+SET participant_wallet = :participantWallet,
+    gift_claimed_at = now(),
+    updated_at = now()
+WHERE gift_claim_code = :claimCode
+AND gift_claimed_at IS NULL
+RETURNING *;
+
+/* @name SetGiftClaimCode */
+UPDATE bookings
+SET gift_claim_code = :claimCode,
+    updated_at = now()
+WHERE id = :id
+RETURNING *;

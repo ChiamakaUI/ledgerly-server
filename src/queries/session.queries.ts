@@ -299,11 +299,17 @@ export interface IGetSessionPaidBookingsResult {
   distributeSignature: string | null;
   donorPda: string | null;
   durationMinutes: number;
+  giftClaimCode: string | null;
+  giftClaimedAt: Date | null;
   hostId: string;
   hostJoinedAt: Date | null;
   hostName: string;
   hostSlug: string;
   id: string;
+  isGift: boolean;
+  participantEmail: string | null;
+  participantName: string | null;
+  participantWallet: string | null;
   paymentExpiresAt: Date | null;
   refundReason: string | null;
   refundSignature: string | null;

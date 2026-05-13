@@ -19,6 +19,9 @@ import {
   getNoShowBookings,
   recordCallerJoined,
   recordHostJoined,
+  getBookingByClaimCode,
+  claimGiftBooking,
+  setGiftClaimCode,
   type booking_status
 } from "../queries/booking.queries.js";
 import { getHostBySlug } from "../queries/hosts.queries.js";
@@ -34,6 +37,14 @@ import {
   createVidbloqToken,
   endVidbloqRoom,
 } from "./vidbloq.service.js";
+import {
+  sendBookingConfirmationToCaller,
+  sendBookingNotificationToHost,
+  sendGiftNotification,
+  sendCancellationToCaller,
+  sendCancellationToHost,
+  sendSessionBookingConfirmation,
+} from "./email.service.js";
 import type {
   CreateBookingRequest,
   SerializedInstruction,
@@ -96,6 +107,9 @@ export async function createBookingRecord(
   const expiryMinutes = parseInt(env().PAYMENT_EXPIRY_MINUTES);
   const paymentExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
+  // Determine if this is a gift booking
+  const isGift = data.isGift || !!(data.participantWallet && data.participantWallet !== data.callerWallet);
+
   const bookings = await createBooking.run(
     {
       hostId: host.id,
@@ -112,6 +126,10 @@ export async function createBookingRecord(
       donorPda: depositResult.donorPDA,
       paymentExpiresAt: paymentExpiresAt.toISOString(),
       sessionId: data.sessionId || null,
+      participantWallet: data.participantWallet || null,
+      participantName: data.participantName || null,
+      participantEmail: data.participantEmail || null,
+      isGift,
     },
     pool
   );
@@ -244,7 +262,93 @@ export async function confirmPayment(bookingId: string, signature: string) {
 
   // Re-fetch with host info
   const fullBooking = await getBookingById.run({ id: bookingId }, pool);
-  return camelizeKeys(fullBooking[0]);
+  const confirmedBooking: any = camelizeKeys(fullBooking[0]);
+
+  // Send confirmation emails (fire and forget — don't block the response)
+  if (confirmedBooking.callerEmail) {
+    // Get host email for calendar invite
+    const hostEmailResult = await pool.query(
+      `SELECT email FROM hosts WHERE id = $1`,
+      [confirmedBooking.hostId]
+    );
+    const hostEmail = hostEmailResult.rows[0]?.email;
+
+    if (confirmedBooking.sessionId) {
+      // Session booking confirmation
+      const { getSessionById } = await import("../queries/session.queries.js");
+      const sessionRows = await getSessionById.run(
+        { id: confirmedBooking.sessionId },
+        pool
+      );
+      const session: any = sessionRows[0] ? camelizeKeys(sessionRows[0]) : null;
+
+      sendSessionBookingConfirmation({
+        bookingId: confirmedBooking.id,
+        callerName: confirmedBooking.callerName,
+        callerEmail: confirmedBooking.callerEmail,
+        hostName: confirmedBooking.hostName,
+        hostEmail,
+        sessionTitle: session?.title || `Session with ${confirmedBooking.hostName}`,
+        scheduledAt: confirmedBooking.scheduledAt,
+        durationMinutes: confirmedBooking.durationMinutes,
+        amount: confirmedBooking.amount,
+        sessionId: confirmedBooking.sessionId,
+      }).catch((err) => console.error("[EMAIL] Session confirmation failed:", err));
+    } else {
+      // 1:1 booking confirmation to caller
+      sendBookingConfirmationToCaller({
+        id: confirmedBooking.id,
+        callerName: confirmedBooking.callerName,
+        callerEmail: confirmedBooking.callerEmail,
+        hostName: confirmedBooking.hostName,
+        hostEmail,
+        scheduledAt: confirmedBooking.scheduledAt,
+        durationMinutes: confirmedBooking.durationMinutes,
+        amount: confirmedBooking.amount,
+        hostSlug: confirmedBooking.hostSlug,
+      }).catch((err) => console.error("[EMAIL] Caller confirmation failed:", err));
+    }
+
+    // Notify host
+    if (hostEmail) {
+      sendBookingNotificationToHost({
+        id: confirmedBooking.id,
+        callerName: confirmedBooking.callerName,
+        callerEmail: confirmedBooking.callerEmail,
+        hostName: confirmedBooking.hostName,
+        hostEmail,
+        scheduledAt: confirmedBooking.scheduledAt,
+        durationMinutes: confirmedBooking.durationMinutes,
+        amount: confirmedBooking.amount,
+        isGift: confirmedBooking.isGift,
+        participantName: confirmedBooking.participantName,
+      }).catch((err) => console.error("[EMAIL] Host notification failed:", err));
+    }
+
+    // Gift notification to recipient
+    if (confirmedBooking.isGift && confirmedBooking.participantEmail) {
+      // Generate a claim code for the gift recipient
+      const claimCode = nanoid(16);
+      await setGiftClaimCode.run(
+        { id: confirmedBooking.id, claimCode },
+        pool
+      );
+
+      const frontendUrl = env().FRONTEND_URL;
+      sendGiftNotification({
+        recipientEmail: confirmedBooking.participantEmail,
+        recipientName: confirmedBooking.participantName || "there",
+        senderName: confirmedBooking.callerName,
+        hostName: confirmedBooking.hostName,
+        hostSlug: confirmedBooking.hostSlug,
+        scheduledAt: confirmedBooking.scheduledAt,
+        durationMinutes: confirmedBooking.durationMinutes,
+        claimUrl: `${frontendUrl}/gift/claim/${claimCode}`,
+      }).catch((err) => console.error("[EMAIL] Gift notification failed:", err));
+    }
+  }
+
+  return confirmedBooking;
 }
 
 // ============================================
@@ -267,8 +371,9 @@ export async function joinCall(
   if (!booking) throw new Error("Booking not found");
 
   const isCaller = booking.callerWallet === wallet;
+  const isParticipant = booking.participantWallet === wallet;
   const isHost = booking.hostWallet === wallet;
-  if (!isCaller && !isHost) {
+  if (!isCaller && !isParticipant && !isHost) {
     throw new Error("You are not a participant in this booking");
   }
 
@@ -325,6 +430,7 @@ export async function joinCall(
   // Get participant token from Vidbloq
   // Use provided name, fall back to booking data
   const displayName = userName
+    || (isParticipant ? booking.participantName : null)
     || (isCaller ? booking.callerName : null)
     || (isHost ? booking.hostName : null)
     || null;
@@ -339,8 +445,8 @@ export async function joinCall(
     wallet,
   });
 
-  // Record join time
-  if (isCaller) {
+  // Record join time — gift participant counts as the "caller" joining
+  if (isCaller || isParticipant) {
     await recordCallerJoined.run({ id: bookingId }, pool);
   } else if (isHost) {
     await recordHostJoined.run({ id: bookingId }, pool);
@@ -384,6 +490,22 @@ export async function confirmCallCompleted(
       });
     } catch (err) {
       console.error("[VIDBLOQ] Failed to end room:", err);
+    }
+  }
+
+  // Check minimum call duration before distributing
+  if (booking.callStartedAt) {
+    const callDuration =
+      (Date.now() - new Date(booking.callStartedAt).getTime()) / 60000;
+    const minDurationPercent = parseInt(env().MIN_CALL_DURATION_PERCENT);
+    const requiredMinutes =
+      (booking.durationMinutes * minDurationPercent) / 100;
+
+    if (callDuration < requiredMinutes) {
+      throw new Error(
+        `Call duration too short. Minimum ${requiredMinutes} minutes required, ` +
+          `call lasted ${callDuration.toFixed(1)} minutes`
+      );
     }
   }
 
@@ -449,7 +571,45 @@ export async function cancelBooking(
 
   // Re-fetch with host info
   const fullBooking = await getBookingById.run({ id: bookingId }, pool);
-  return camelizeKeys(fullBooking[0]);
+  const cancelledBooking: any = camelizeKeys(fullBooking[0]);
+
+  // Send cancellation emails (fire and forget)
+  const cancelledBy = isHost ? "host" as const : "caller" as const;
+
+  // Get host email
+  const hostEmailResult = await pool.query(
+    `SELECT email FROM hosts WHERE id = $1`,
+    [cancelledBooking.hostId]
+  );
+  const hostEmail = hostEmailResult.rows[0]?.email;
+
+  if (cancelledBooking.callerEmail) {
+    sendCancellationToCaller({
+      id: cancelledBooking.id,
+      callerName: cancelledBooking.callerName,
+      callerEmail: cancelledBooking.callerEmail,
+      hostName: cancelledBooking.hostName,
+      hostEmail,
+      scheduledAt: cancelledBooking.scheduledAt,
+      durationMinutes: cancelledBooking.durationMinutes,
+      amount: cancelledBooking.amount,
+      cancelledBy,
+    }).catch((err) => console.error("[EMAIL] Caller cancellation failed:", err));
+  }
+
+  if (hostEmail) {
+    sendCancellationToHost({
+      id: cancelledBooking.id,
+      callerName: cancelledBooking.callerName,
+      hostName: cancelledBooking.hostName,
+      hostEmail,
+      scheduledAt: cancelledBooking.scheduledAt,
+      durationMinutes: cancelledBooking.durationMinutes,
+      cancelledBy,
+    }).catch((err) => console.error("[EMAIL] Host cancellation failed:", err));
+  }
+
+  return cancelledBooking;
 }
 
 // ============================================
@@ -460,6 +620,96 @@ export async function getBooking(bookingId: string) {
   const pool = getPool();
   const result = await getBookingById.run({ id: bookingId }, pool);
   return result[0] ? camelizeKeys(result[0]) : null;
+}
+
+// ============================================
+// Gift claim flow
+// ============================================
+
+/**
+ * Look up a gift booking by claim code (public — no auth required).
+ * Returns booking details without sensitive info for the claim page.
+ */
+export async function getGiftByClaimCode(claimCode: string) {
+  const pool = getPool();
+  const result = await getBookingByClaimCode.run({ claimCode }, pool);
+  if (!result[0]) return null;
+
+  const booking: any = camelizeKeys(result[0]);
+
+  // Return only what the recipient needs to see
+  return {
+    id: booking.id,
+    hostName: booking.hostName,
+    hostSlug: booking.hostSlug,
+    scheduledAt: booking.scheduledAt,
+    durationMinutes: booking.durationMinutes,
+    callerName: booking.callerName, // who gifted it
+    participantName: booking.participantName,
+    isGift: booking.isGift,
+    giftClaimedAt: booking.giftClaimedAt,
+    status: booking.status,
+    sessionId: booking.sessionId,
+  };
+}
+
+/**
+ * Claim a gift booking — recipient connects their wallet.
+ * Sets participant_wallet and gift_claimed_at.
+ * After claiming, the recipient can join the call via /join.
+ */
+export async function claimGift(
+  claimCode: string,
+  participantWallet: string
+): Promise<any> {
+  const pool = getPool();
+
+  // Look up the booking
+  const rows = await getBookingByClaimCode.run({ claimCode }, pool);
+  if (!rows[0]) throw new Error("Gift not found");
+
+  const booking: any = camelizeKeys(rows[0]);
+
+  if (!booking.isGift) {
+    throw new Error("This booking is not a gift");
+  }
+
+  if (booking.giftClaimedAt) {
+    throw new Error("This gift has already been claimed");
+  }
+
+  if (!["paid", "active"].includes(booking.status)) {
+    throw new Error(
+      booking.status === "refunded" || booking.status === "cancelled"
+        ? "This gift has been cancelled"
+        : `Cannot claim gift with booking status: ${booking.status}`
+    );
+  }
+
+  // Check if the call hasn't already passed
+  const scheduledEnd = new Date(booking.scheduledAt).getTime() +
+    booking.durationMinutes * 60 * 1000;
+  if (Date.now() > scheduledEnd) {
+    throw new Error("This session has already ended");
+  }
+
+  // Claim it — set the participant's wallet
+  const updated = await claimGiftBooking.run(
+    { claimCode, participantWallet },
+    pool
+  );
+
+  if (!updated || updated.length === 0) {
+    throw new Error("Failed to claim gift — it may have already been claimed");
+  }
+
+  // Re-fetch with host info
+  const fullBooking = await getBookingById.run(
+    { id: booking.id },
+    pool
+  );
+
+  return camelizeKeys(fullBooking[0]);
 }
 
 export async function listCallerBookings(
@@ -529,26 +779,73 @@ export async function handleNoShows(): Promise<number> {
   );
   const noShows: any[] = camelizeKeys(noShowsRaw);
 
-  let refunded = 0;
+  let processed = 0;
 
   for (const booking of noShows) {
     try {
-      const refundResult = await refundEscrow({
-        streamName: booking.streamName,
-        callerWallet: booking.callerWallet,
-        amount: Number(booking.amount),
-      });
+      if (booking.hostJoinedAt && !booking.callerJoinedAt) {
+        // Host showed up, caller/participant didn't → host gets paid
+        // The host delivered their time. Caller forfeited.
+        console.log(
+          `[CRON] No-show caller for booking ${booking.id}. Distributing to host.`
+        );
 
-      await markNoShow.run(
-        { id: booking.id, refundSignature: refundResult.signature },
-        pool
-      );
+        try {
+          const result = await distributeWithFee({
+            streamName: booking.streamName,
+            hostWallet: booking.hostWallet,
+            totalAmount: Number(booking.amount),
+            feeBps: booking.feePercentage,
+          });
 
-      refunded++;
+          await completeBooking.run(
+            { id: booking.id, distributeSignature: result.hostSignature },
+            pool
+          );
+
+          console.log(
+            `[CRON] ✅ Distributed no-show booking ${booking.id} to host`
+          );
+        } catch (distErr: any) {
+          if (distErr.message?.includes("TimeLocked")) {
+            console.log(
+              `[CRON] Escrow still locked for booking ${booking.id}. Will retry next cycle.`
+            );
+            continue; // Skip this one, try again next cron run
+          }
+          throw distErr;
+        }
+      } else {
+        // Host didn't join (regardless of caller) → refund to payer
+        // Also covers: neither joined → refund
+        console.log(
+          `[CRON] No-show host for booking ${booking.id}. Refunding to caller.`
+        );
+
+        const refundResult = await refundEscrow({
+          streamName: booking.streamName,
+          callerWallet: booking.callerWallet, // always refund to payer, not participant
+          amount: Number(booking.amount),
+        });
+
+        await markNoShow.run(
+          { id: booking.id, refundSignature: refundResult.signature },
+          pool
+        );
+
+        console.log(
+          `[CRON] ✅ Refunded no-show booking ${booking.id} to caller`
+        );
+      }
+
+      processed++;
     } catch (err) {
-      console.error(`Failed to refund no-show booking ${booking.id}:`, err);
+      console.error(
+        `[CRON] Failed to process no-show booking ${booking.id}:`,
+        err
+      );
     }
   }
 
-  return refunded;
+  return processed;
 }

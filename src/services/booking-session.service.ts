@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
 import { getPool, camelizeKeys, env } from "../config/index.js";
-import {} from "../config/env.js";
 import {
   createSession,
   getSessionById,
@@ -10,6 +9,7 @@ import {
   getSessionBookingCount,
   getSessionPaidBookings,
   updateSessionStatus,
+  updateSessionRoom,
   updateSessionStatusToFull,
   cancelSession,
 } from "../queries/session.queries.js";
@@ -67,7 +67,7 @@ export async function createSessionRecord(data: CreateSessionRequest) {
       maxParticipants: data.maxParticipants,
       sessionType: data.sessionType,
     },
-    pool,
+    pool
   );
 
   // Re-fetch with host info
@@ -89,7 +89,10 @@ export async function bookSession(data: BookSessionRequest): Promise<{
   const pool = getPool();
 
   // 1. Get session with host info
-  const sessionsRaw = await getSessionById.run({ id: data.sessionId }, pool);
+  const sessionsRaw = await getSessionById.run(
+    { id: data.sessionId },
+    pool
+  );
   const session: any = sessionsRaw[0] ? camelizeKeys(sessionsRaw[0]) : null;
   if (!session) throw new Error("Session not found");
 
@@ -97,7 +100,7 @@ export async function bookSession(data: BookSessionRequest): Promise<{
     throw new Error(
       session.status === "full"
         ? "This session is fully booked"
-        : `Cannot book a session with status: ${session.status}`,
+        : `Cannot book a session with status: ${session.status}`
     );
   }
 
@@ -108,7 +111,7 @@ export async function bookSession(data: BookSessionRequest): Promise<{
   // 2. Check capacity
   const countResult = await getSessionBookingCount.run(
     { sessionId: data.sessionId },
-    pool,
+    pool
   );
   const currentCount = countResult[0]?.count || 0;
   if (currentCount >= session.maxParticipants) {
@@ -122,7 +125,7 @@ export async function bookSession(data: BookSessionRequest): Promise<{
   const unlockTime = Math.floor(
     (new Date(session.scheduledAt).getTime() +
       (session.durationMinutes + bufferMinutes) * 60 * 1000) /
-      1000,
+      1000
   );
 
   const streamName = `ses-${nanoid(10)}`;
@@ -146,6 +149,8 @@ export async function bookSession(data: BookSessionRequest): Promise<{
   const paymentExpiresAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
   // 6. Create booking linked to session
+  const isGift = data.isGift || !!(data.participantWallet && data.participantWallet !== data.callerWallet);
+
   const bookings = await createBooking.run(
     {
       hostId: session.hostId,
@@ -162,8 +167,12 @@ export async function bookSession(data: BookSessionRequest): Promise<{
       donorPda: depositResult.donorPDA,
       paymentExpiresAt: paymentExpiresAt.toISOString(),
       sessionId: data.sessionId,
+      participantWallet: data.participantWallet || null,
+      participantName: data.participantName || null,
+      participantEmail: data.participantEmail || null,
+      isGift,
     },
-    pool,
+    pool
   );
 
   // 7. Check if session is now full
@@ -172,7 +181,10 @@ export async function bookSession(data: BookSessionRequest): Promise<{
   }
 
   // Re-fetch booking with host info
-  const fullBooking = await getBookingById.run({ id: bookings[0].id }, pool);
+  const fullBooking = await getBookingById.run(
+    { id: bookings[0].id },
+    pool
+  );
 
   return {
     booking: camelizeKeys(fullBooking[0]),
@@ -199,10 +211,12 @@ export async function getSession(sessionId: string) {
   const session = camelizeKeys<any>(result[0]);
 
   // Add booking count
-  const countResult = await getSessionBookingCount.run({ sessionId }, pool);
+  const countResult = await getSessionBookingCount.run(
+    { sessionId },
+    pool
+  );
   session.currentParticipants = countResult[0]?.count || 0;
-  session.spotsRemaining =
-    session.maxParticipants - session.currentParticipants;
+  session.spotsRemaining = session.maxParticipants - session.currentParticipants;
 
   return session;
 }
@@ -215,7 +229,7 @@ export async function listHostSessions(
   hostId: string,
   upcoming = false,
   limit = 10,
-  offset = 0,
+  offset = 0
 ) {
   const pool = getPool();
 
@@ -223,32 +237,22 @@ export async function listHostSessions(
     ? await getUpcomingSessionsByHostId.run({ hostId, limit, offset }, pool)
     : await getSessionsByHostId.run({ hostId, limit, offset }, pool);
 
-  // Add participant counts to each session
-  const enriched = [];
-  for (const raw of sessions) {
-    const session = camelizeKeys<any>(raw);
-    const countResult = await getSessionBookingCount.run(
-      { sessionId: session.id },
-      pool,
-    );
-    session.currentParticipants = countResult[0]?.count || 0;
-    session.spotsRemaining =
-      session.maxParticipants - session.currentParticipants;
-    enriched.push(session);
-  }
-
-  return enriched;
+  return camelizeKeys(sessions);
 }
 
 // ============================================
 // List open sessions for a host's booking page
 // ============================================
 
-export async function listOpenSessions(slug: string, limit = 10, offset = 0) {
+export async function listOpenSessions(
+  slug: string,
+  limit = 10,
+  offset = 0
+) {
   const pool = getPool();
   const sessions = await getOpenSessionsBySlug.run(
     { slug, limit, offset },
-    pool,
+    pool
   );
 
   // Add spots remaining to each session
@@ -257,7 +261,7 @@ export async function listOpenSessions(slug: string, limit = 10, offset = 0) {
     const session = camelizeKeys<any>(raw);
     const countResult = await getSessionBookingCount.run(
       { sessionId: session.id },
-      pool,
+      pool
     );
     session.currentParticipants = countResult[0]?.count || 0;
     session.spotsRemaining =
@@ -272,7 +276,9 @@ export async function listOpenSessions(slug: string, limit = 10, offset = 0) {
 // Batch distribute for a session (called by webhook)
 // ============================================
 
-export async function distributeSession(sessionId: string): Promise<{
+export async function distributeSession(
+  sessionId: string
+): Promise<{
   distributed: number;
   failed: number;
   results: Array<{
@@ -283,7 +289,10 @@ export async function distributeSession(sessionId: string): Promise<{
 }> {
   const pool = getPool();
 
-  const bookingsRaw = await getPaidBookingsBySessionId.run({ sessionId }, pool);
+  const bookingsRaw = await getPaidBookingsBySessionId.run(
+    { sessionId },
+    pool
+  );
   const bookings: any[] = camelizeKeys(bookingsRaw);
 
   if (bookings.length === 0) {
@@ -312,7 +321,7 @@ export async function distributeSession(sessionId: string): Promise<{
           id: booking.id,
           distributeSignature: result.hostSignature,
         },
-        pool,
+        pool
       );
 
       results.push({ bookingId: booking.id, success: true });
@@ -320,7 +329,7 @@ export async function distributeSession(sessionId: string): Promise<{
 
       console.log(
         `[SESSION] Distributed booking ${booking.id}: ` +
-          `host ${result.hostAmount}, fee ${result.feeAmount}`,
+          `host ${result.hostAmount}, fee ${result.feeAmount}`
       );
     } catch (err: any) {
       results.push({
@@ -332,14 +341,17 @@ export async function distributeSession(sessionId: string): Promise<{
 
       console.error(
         `[SESSION] Failed to distribute booking ${booking.id}:`,
-        err.message,
+        err.message
       );
     }
   }
 
   // Update session status if all distributed
   if (failed === 0) {
-    await updateSessionStatus.run({ id: sessionId, status: "completed" }, pool);
+    await updateSessionStatus.run(
+      { id: sessionId, status: "completed" },
+      pool
+    );
   }
 
   return { distributed, failed, results };
@@ -351,7 +363,7 @@ export async function distributeSession(sessionId: string): Promise<{
 
 export async function cancelSessionRecord(
   sessionId: string,
-  hostWallet: string,
+  hostWallet: string
 ): Promise<{ session: any; refunded: number; failed: number }> {
   const pool = getPool();
 
@@ -366,7 +378,10 @@ export async function cancelSessionRecord(
   }
 
   // Refund all paid bookings
-  const bookingsRaw = await getSessionPaidBookings.run({ sessionId }, pool);
+  const bookingsRaw = await getSessionPaidBookings.run(
+    { sessionId },
+    pool
+  );
   const bookings: any[] = camelizeKeys(bookingsRaw);
 
   let refunded = 0;
