@@ -9,6 +9,7 @@ import {
   bookingRoutes,
   webhookRoutes,
   bookingSessionRoutes,
+  // flipcashRoutes
 } from "./routes/index.js";
 import { startCronJobs } from "./services/index.js";
 
@@ -25,7 +26,7 @@ const app = express();
 // }));
 
 app.use((req, res, next) => {
-  const allowedOrigins = [env().FRONTEND_URL, "http://localhost:3000"];
+  const allowedOrigins = [env().FRONTEND_URL, "http://localhost:3000", "https://ledgerl.netlify.app"];
   const origin = req.headers.origin;
 
   if (origin && allowedOrigins.includes(origin)) {
@@ -66,6 +67,7 @@ app.use("/api/hosts", hostRoutes.default);
 app.use("/api/bookings", bookingRoutes.default);
 app.use("/api/webhooks", webhookRoutes.default);
 app.use("/api/sessions", bookingSessionRoutes.default);
+// app.use("/api/flipcash", flipcashRoutes.default);
 
 const PORT = parseInt(env().PORT);
 
