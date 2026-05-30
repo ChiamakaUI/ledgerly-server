@@ -13,9 +13,9 @@ Hosts can link a [Flipcash](https://flipcash.me) currency to their profile. Call
 ## Stack
 
 - Node.js, TypeScript, Express
-- PostgreSQL + [PgTyped](https://pgtyped.dev/) (typed SQL compiled to TypeScript)
+- PostgreSQL + [PgTyped](https://pgtyped.dev) (typed SQL compiled to TypeScript)
 - Solana/Anchor (USDC escrow via Conditional streams)
-- [VidBloq](https://github.com/your-org/vidbloq) SDK for video calls
+- [VidBloq](https://vidbloq.com) SDK for video calls
 - Resend for transactional email + ICS calendar invites
 - Railway (backend + Postgres), Vercel (frontend)
 
