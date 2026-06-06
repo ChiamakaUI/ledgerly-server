@@ -26,7 +26,7 @@ const app = express();
 // }));
 
 app.use((req, res, next) => {
-  const allowedOrigins = [env().FRONTEND_URL, "http://localhost:3000", "https://ledgerl.netlify.app"];
+  const allowedOrigins = [env().FRONTEND_URL, "http://localhost:3000", "https://ledgerl.netlify.app", "https://ledgerly.vidbloq.com"];
   const origin = req.headers.origin;
 
   if (origin && allowedOrigins.includes(origin)) {
