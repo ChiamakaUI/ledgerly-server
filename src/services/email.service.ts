@@ -32,7 +32,7 @@ function getResend(): Resend | null {
   return _resend;
 }
 
-const FROM_ADDRESS = "Ledgerly <onboarding@resend.dev>";
+const FROM_ADDRESS = "Ledgerly <noreply@ledgerly.vidbloq.com>";
 
 // ============================================
 // Shared helpers
